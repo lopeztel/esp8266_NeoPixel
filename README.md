@@ -26,3 +26,6 @@ MQTT NeoPixel control using a esp8266 based board (ESP-01S). Platformio project 
 ## TODO
 + Implement initial SSID and password configuration through serial port
 + Standalone light effects
+
+## Contributing 
+Feel free to drop a line/contact me if interested in this project
