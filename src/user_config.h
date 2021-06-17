@@ -27,7 +27,7 @@
 
 //Adafruit_NeoPixel Stuff
 #define PIN	2
-#define NUMPIXELS	16
+#define NUMPIXELS	<number_of_leds>
 #define BRIGHTNESS	50
 // RGB NeoPixel permutations; white and red offsets are always same
 // Offset:         W          R          G          B
