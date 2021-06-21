@@ -215,6 +215,41 @@ void set_led_strip(struct Adafruit_NeoPixel *an) {
   }
 }
 
+/*--------------------------Custom LED effect stuff------------------------*/
+enum fade_state{
+  to_purple,
+  to_red,
+  to_orange,
+  to_green,
+  to_teal,
+  to_blue
+};
+
+typedef union{
+    struct{ //LSB to MSB
+        uint8_t red:8;
+        uint8_t green:8;
+        uint8_t blue:8;
+    }b;
+    uint32_t w;
+}color;
+
+typedef struct leds{
+    color LED_ARRAY[NUMPIXELS]; // led complete array
+}LEDS;
+
+typedef struct ledline{
+    color *LED_LINE_ELEMENTS[LEDS_PER_LINE]; // leds in line
+}LEDLINE;
+
+typedef struct ledstrip{
+    LEDLINE LED_LINES_IN_STRIP[LINES_IN_STRIP]; // led lines in strip
+}LEDSTRIP;
+
+
+/*--------------------------Custom LED effect stuff------------------------*/
+
+/*--------------------------Global vars---------------------------*/
 struct Adafruit_NeoPixel ledstrip;
 
 MQTT_Client mqttClient;
@@ -234,17 +269,207 @@ uint8_t fade_green = 255;
 uint8_t fade_blue = 255;
 bool fade = false;
 bool solid = false;
+bool rainbow = false;
+LEDS all_leds;
+LEDSTRIP myledstrip;
+color rainbow_array[COLOR_COMBINATIONS];
+enum fade_state FADESTATE = to_purple; //state machine initial state
 
-enum fade_state{
-  to_purple,
-  to_red,
-  to_orange,
-  to_green,
-  to_teal,
-  to_blue
-};
+/*--------------------------Global vars---------------------------*/
+void set_rainbow_element(uint8_t element_num, uint8_t red, uint8_t green, uint8_t blue){
+    rainbow_array[element_num].b.red = red;
+    rainbow_array[element_num].b.green = blue;
+    rainbow_array[element_num].b.blue = green;
+}
 
-enum fade_state FADESTATE = to_purple;
+void init_rainbow_array(){
+    set_rainbow_element(0, 0, 0, 255); //blue
+    set_rainbow_element(1, 255, 0, 255); //purple
+    set_rainbow_element(2, 255, 0, 0); //red
+    set_rainbow_element(3, 255, 255, 0); //orange
+    set_rainbow_element(4, 0, 255, 0); //green
+    set_rainbow_element(5, 0, 255, 255); //teal
+}
+
+void rotate_rainbow_array(){
+    color temp = rainbow_array[0];
+    for (uint8_t i = 0; i < COLOR_COMBINATIONS -1; i++) {
+        rainbow_array[i] = rainbow_array[i+1];
+    }
+    rainbow_array[COLOR_COMBINATIONS-1] = temp;
+}
+
+void ledstrip_remap() {
+  // 1st ring
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[0];
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[17];
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[18];
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[35];
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[36];
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[53];
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[54];
+  myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[71];
+
+  // 2nd ring
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[1];
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[16];
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[19];
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[34];
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[37];
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[52];
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[55];
+  myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[70];
+
+  // 3rd ring
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[2];
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[15];
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[20];
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[33];
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[38];
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[51];
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[56];
+  myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[69];
+
+  // 4th ring
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[3];
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[14];
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[21];
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[32];
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[39];
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[50];
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[57];
+  myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[68];
+
+  // 5th ring
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[4];
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[13];
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[22];
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[31];
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[40];
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[49];
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[58];
+  myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[67];
+
+  // 6th ring
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[5];
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[12];
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[23];
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[30];
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[41];
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[48];
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[59];
+  myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[66];
+
+  // 7th ring
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[6];
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[11];
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[24];
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[29];
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[42];
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[47];
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[60];
+  myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[65];
+
+  // 8th ring
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[7];
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[10];
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[25];
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[28];
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[43];
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[46];
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[61];
+  myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[64];
+
+  // 9th ring
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[0] =
+      &all_leds.LED_ARRAY[8];
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[1] =
+      &all_leds.LED_ARRAY[9];
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[2] =
+      &all_leds.LED_ARRAY[26];
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[3] =
+      &all_leds.LED_ARRAY[27];
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[4] =
+      &all_leds.LED_ARRAY[44];
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[5] =
+      &all_leds.LED_ARRAY[45];
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[6] =
+      &all_leds.LED_ARRAY[62];
+  myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[7] =
+      &all_leds.LED_ARRAY[63];
+}
+
+void set_strip_line_color(uint8_t line_num, color assigned_color){
+    for (uint8_t i = 0; i < LEDS_PER_LINE; i++) {
+        myledstrip.LED_LINES_IN_STRIP[line_num].LED_LINE_ELEMENTS[i]->b.red = assigned_color.b.red;
+        myledstrip.LED_LINES_IN_STRIP[line_num].LED_LINE_ELEMENTS[i]->b.green = assigned_color.b.green;
+        myledstrip.LED_LINES_IN_STRIP[line_num].LED_LINE_ELEMENTS[i]->b.blue = assigned_color.b.blue;
+    }
+}
 
 const char *statusMapping[] = {"OK", "FAIL", "PENDING", "BUSY", "CANCEL"};
 
@@ -261,6 +486,7 @@ void mqttConnectedCb(uint32_t *args) {
   MQTT_Subscribe(client, "/mqtt/lights/color", 2);
   MQTT_Subscribe(client, "/mqtt/lights/fade", 2);
   MQTT_Subscribe(client, "/mqtt/lights/solid", 2);
+  MQTT_Subscribe(client, "/mqtt/lights/rainbow", 2);
 }
 
 void mqttDisconnectedCb(uint32_t *args) {
@@ -293,6 +519,7 @@ void mqttDataCb(uint32_t *args, const char *topic, uint32_t topic_len,
   int isBlue = strcmp(topicBuf, "/mqtt/lights/blue");
   int isFade = strcmp(topicBuf, "/mqtt/lights/fade");
   int isSolid = strcmp(topicBuf, "/mqtt/lights/solid");
+  int isRainbow = strcmp(topicBuf, "/mqtt/lights/rainbow");
   INFO_MSG("topic comparison result: R %d, G %d, B %d, fade %d, solid%d\r\n",
            isRed, isGreen, isBlue, isFade, isSolid);
   if (isRed == 0) {
@@ -304,8 +531,14 @@ void mqttDataCb(uint32_t *args, const char *topic, uint32_t topic_len,
   } else if (isFade == 0) {
     fade = dataBuf[0];
     solid = false;
+    rainbow = false;
   } else if (isSolid == 0) {
     solid = dataBuf[0];
+    fade = false;
+    rainbow = false;
+  } else if (isRainbow == 0) {
+    rainbow = dataBuf[0];
+    solid = false;
     fade = false;
   }
 
@@ -338,6 +571,11 @@ void mqttDataCb(uint32_t *args, const char *topic, uint32_t topic_len,
     }
     show(&ledstrip);
 
+    //initialize timer
+    os_timer_disarm(&fadeTimer);
+    os_timer_setfn(&fadeTimer, (os_timer_func_t *)fadeFunction, NULL);
+    os_timer_arm(&fadeTimer, FADE_DELAY, 0);
+  }else if(rainbow){
     //initialize timer
     os_timer_disarm(&fadeTimer);
     os_timer_setfn(&fadeTimer, (os_timer_func_t *)fadeFunction, NULL);
@@ -385,7 +623,7 @@ static void ICACHE_FLASH_ATTR wifi_check_ip(void *arg) {
 static void ICACHE_FLASH_ATTR fadeFunction(void *arg) {
   os_timer_disarm(&fadeTimer);
   if (fade) {
-    switch (FADESTATE) {
+    switch (FADESTATE) { //Fade state machine
     case to_purple:
       if (fade_red < 255) { // purple
         fade_red += 51;
@@ -431,10 +669,117 @@ static void ICACHE_FLASH_ATTR fadeFunction(void *arg) {
     default:
       break;
     }
+    
+    /*---------------------------------Normal Fade--------------------------------*/
+
+    for (uint8_t i = 0; i < NUMPIXELS; i++) {
+      setPixelColor(&ledstrip, i, color_rgb(fade_red, fade_green, fade_blue));
+      system_soft_wdt_feed();
+    }
+    show(&ledstrip);
+
+
+    /*---------------------------------Normal Fade--------------------------------*/
+
+    /*---------------------------------Tricolor Fade, no struct--------------------------------*/
+
+    /* for (uint8_t i = 0; i < NUMPIXELS; i++) { */
+      /* if (i < 3 || (i >= 15 && i < 21) || (i >= 33 && i < 39) || (i >= 51 && i < 57) || (i >= 69 && i < 72)) { */
+        /* setPixelColor(&ledstrip, i, */
+                      /* color_rgb(fade_red, fade_green, fade_blue)); // RGB */
+        /* system_soft_wdt_feed(); */
+      /* } else if ((i%9) >= 3 && (i%9) < 6){ */
+        /* setPixelColor(&ledstrip, i, */
+                      /* color_rgb(fade_green, fade_blue, fade_red)); // GBR */
+        /* system_soft_wdt_feed(); */
+      /* } else if ((i >= 6 && i < 12) || (i >= 24 && i < 30) || (i >= 42 && i < 48) || (i >= 60 && i < 66)){ */
+        /* setPixelColor(&ledstrip, i, */
+                      /* color_rgb(fade_blue, fade_red, fade_green)); // BRG */
+        /* system_soft_wdt_feed(); */
+      /* } */
+    /* } */
+    /* show(&ledstrip); */
+
+    /*---------------------------------Tricolor Fade, no struct--------------------------------*/
+
+    /*---------------------------------Rainbow with fancy structs--------------------------------*/
+
+    /* for (uint8_t i = 0; i < 8; i++) { */
+        /* myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[i]->b.red = fade_red; */
+        /* myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[i]->b.green = fade_green; */
+        /* myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[i]->b.blue = fade_blue; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[i]->b.red = fade_green; */
+        /* myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[i]->b.green = fade_blue; */
+        /* myledstrip.LED_LINES_IN_STRIP[1].LED_LINE_ELEMENTS[i]->b.blue = fade_red; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[i]->b.red = fade_blue; */
+        /* myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[i]->b.green = fade_red; */
+        /* myledstrip.LED_LINES_IN_STRIP[2].LED_LINE_ELEMENTS[i]->b.blue = fade_green; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[i]->b.red = fade_red; */
+        /* myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[i]->b.green = fade_green; */
+        /* myledstrip.LED_LINES_IN_STRIP[3].LED_LINE_ELEMENTS[i]->b.blue = fade_blue; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[i]->b.red = fade_green; */
+        /* myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[i]->b.green = fade_blue; */
+        /* myledstrip.LED_LINES_IN_STRIP[4].LED_LINE_ELEMENTS[i]->b.blue = fade_red; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[i]->b.red = fade_blue; */
+        /* myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[i]->b.green = fade_red; */
+        /* myledstrip.LED_LINES_IN_STRIP[5].LED_LINE_ELEMENTS[i]->b.blue = fade_green; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[i]->b.red = fade_red; */
+        /* myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[i]->b.green = fade_green; */
+        /* myledstrip.LED_LINES_IN_STRIP[6].LED_LINE_ELEMENTS[i]->b.blue = fade_blue; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[i]->b.red = fade_green; */
+        /* myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[i]->b.green = fade_blue; */
+        /* myledstrip.LED_LINES_IN_STRIP[7].LED_LINE_ELEMENTS[i]->b.blue = fade_red; */
+/*  */
+        /* myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[i]->b.red = fade_blue; */
+        /* myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[i]->b.green = fade_red; */
+        /* myledstrip.LED_LINES_IN_STRIP[8].LED_LINE_ELEMENTS[i]->b.blue = fade_green; */
+/*  */
+        /* system_soft_wdt_feed(); */
+    /* } */
+    /* rotate_rainbow_array(); */
+    /* for (uint8_t i = 0; i < LINES_IN_STRIP; i++) { */
+      /* if (i < COLOR_COMBINATIONS) { */
+        /* set_strip_line_color(i, rainbow_array[i]); */
+      /* } else { */
+        /* set_strip_line_color(i, rainbow_array[i - COLOR_COMBINATIONS]); */
+      /* } */
+    /* } */
+/*  */
+    /* for (uint8_t i = 0; i < NUMPIXELS; i++) { */
+      /* // Color takes RGB values, from 0,0,0 up to 255,255,255 */
+      /* setPixelColor(&ledstrip, i, */
+                    /* color_rgb(all_leds.LED_ARRAY[i].b.red, */
+                              /* all_leds.LED_ARRAY[i].b.green, */
+                              /* all_leds.LED_ARRAY[i].b.blue)); */
+      /* system_soft_wdt_feed(); */
+    /* } */
+    /* show(&ledstrip); */
+
+    /*---------------------------------Rainbow with fancy structs--------------------------------*/
+
+  }else if(rainbow){
+    rotate_rainbow_array();
+    for (uint8_t i = 0; i < LINES_IN_STRIP; i++) {
+      if (i < COLOR_COMBINATIONS) {
+        set_strip_line_color(i, rainbow_array[i]);
+      } else {
+        set_strip_line_color(i, rainbow_array[i - COLOR_COMBINATIONS]);
+      }
+    }
 
     for (uint8_t i = 0; i < NUMPIXELS; i++) {
       // Color takes RGB values, from 0,0,0 up to 255,255,255
-      setPixelColor(&ledstrip, i, color_rgb(fade_red, fade_green, fade_blue));
+      setPixelColor(&ledstrip, i,
+                    color_rgb(all_leds.LED_ARRAY[i].b.red,
+                              all_leds.LED_ARRAY[i].b.green,
+                              all_leds.LED_ARRAY[i].b.blue));
       system_soft_wdt_feed();
     }
     show(&ledstrip);
@@ -587,30 +932,38 @@ void ICACHE_FLASH_ATTR user_init(void) {
   uint8_t i;
   uint8_t j;
 
-  for (uint8_t n = 0; n < 4; n++) {
-    clear_led_strip(&ledstrip);
+  clear_led_strip(&ledstrip);
+  for (uint8_t n = 0; n < 3; n++) {
     for (j = 0; j < 255; j += 17) {
       for (i = 0; i < NUMPIXELS; i++) {
-        // Color takes RGB values, from 0,0,0 up to 255,255,255
-        setPixelColor(&ledstrip, i, color_rgb(j, j, j)); // All LEDs on.
-        os_delay_us(250);                                // Delay
+        setPixelColor(&ledstrip, i, color_rgb(j, j, j)); // all leds on.
+        os_delay_us(500);                                // delay
         system_soft_wdt_feed();
-        /* show(&ledstrip); // This sends the updated pixel color to the */
       }
       show(&ledstrip); // This sends the updated pixel color to the
     }
     for (j = 255; j > 0; j -= 17) {
       for (i = 0; i < NUMPIXELS; i++) {
-        // Color takes RGB values, from 0,0,0 up to 255,255,255
-        setPixelColor(&ledstrip, i, color_rgb(j, j, j)); // use j value as color
-        os_delay_us(250);                                // Delay
+        setPixelColor(&ledstrip, i, color_rgb(j, j, j)); // all leds off.
+        os_delay_us(500);                                // Delay
         system_soft_wdt_feed();
-        /* show(&ledstrip); // This sends the updated pixel color to the */
       }
       show(&ledstrip); // This sends the updated pixel color to the
     }
+    /* for (j = 0; j < 255; j += 17) { */
+      /* for (i = 0; i < NUMPIXELS; i++) { */
+        /* setPixelColor(&ledstrip, i, color_rgb(j, j, j)); // all leds on. */
+        /* os_delay_us(500);                                // delay */
+        /* system_soft_wdt_feed(); */
+      /* } */
+      /* show(&ledstrip); // This sends the updated pixel color to the */
+    /* } */
   }
-
   set_led_strip(&ledstrip);
+
+  /*---------LED effect init---------*/
+  ledstrip_remap();
+  init_rainbow_array();
+  /*---------LED effect init---------*/
   INFO_MSG("System init done.\n");
 }
