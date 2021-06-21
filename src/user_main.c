@@ -282,13 +282,15 @@ void set_rainbow_element(uint8_t element_num, uint8_t red, uint8_t green, uint8_
     rainbow_array[element_num].b.blue = green;
 }
 
-void init_rainbow_array(){
-    set_rainbow_element(0, 0, 0, 255); //blue
-    set_rainbow_element(1, 255, 0, 255); //purple
-    set_rainbow_element(2, 255, 0, 0); //red
-    set_rainbow_element(3, 255, 255, 0); //orange
-    set_rainbow_element(4, 0, 255, 0); //green
-    set_rainbow_element(5, 0, 255, 255); //teal
+void init_rainbow_array() { // it is important to rework this function if the
+                            // desired color combination array doesn't have 6
+                            // elements
+  set_rainbow_element(0, 0, 0, 255);   // blue
+  set_rainbow_element(1, 255, 0, 255); // purple
+  set_rainbow_element(2, 255, 0, 0);   // red
+  set_rainbow_element(3, 255, 255, 0); // orange
+  set_rainbow_element(4, 0, 255, 0);   // green
+  set_rainbow_element(5, 0, 255, 255); // teal
 }
 
 void rotate_rainbow_array(){
@@ -299,7 +301,9 @@ void rotate_rainbow_array(){
     rainbow_array[COLOR_COMBINATIONS-1] = temp;
 }
 
-void ledstrip_remap() {
+void ledstrip_remap() { // it is important to rework this function if the total
+                        // number of leds in your strip is not 72 (arranged in 9
+                        // lines x 8 elements each)
   // 1st ring
   myledstrip.LED_LINES_IN_STRIP[0].LED_LINE_ELEMENTS[0] =
       &all_leds.LED_ARRAY[0];

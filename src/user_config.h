@@ -26,9 +26,12 @@
 #define CLIENT_SSL_ENABLE
 
 //Adafruit_NeoPixel Stuff
-#define PIN	2
-#define NUMPIXELS	<number_of_leds>
+#define PIN	2 //if you are using ESP-01
+#define NUMPIXELS	"<number_of_leds>" //in my case 72
 #define BRIGHTNESS	50
+#define COLOR_COMBINATIONS      "<number_of_color_combinations>" //in my case 6
+#define LINES_IN_STRIP  "<number_of_lines_per_strip>" //in my case 9
+#define LEDS_PER_LINE   "<number of_leds_per_line>" //in my case 8
 // RGB NeoPixel permutations; white and red offsets are always same
 // Offset:         W          R          G          B
 #define NEO_GRB	((1 << 6) | (1 << 4) | (0 << 2) | (2))
