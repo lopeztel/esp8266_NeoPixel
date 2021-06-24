@@ -7,9 +7,9 @@ file for convenience.
 
 ## Requirements
 
-- ESP-01S board
-- ESP-01 ESP-01S RGB LED Controller Adapter
-- WS2812 WS2812B n Bits Light Ring (I used 16 Bits)
+- ESP-01 board
+- [ESP-01 RGB Board](https://www.aliexpress.com/item/32843759597.html)
+- WS2812 WS2812B n Bits Light Ring (I used 16 Bits) (Adafruit NeoPixel)
 - 3-5V supply or battery
 
 ![HW](HW.jpg)
@@ -23,7 +23,24 @@ file for convenience.
 
 (Tested with MQTT_Dashboard)
 
-![Demo](Demo.gif)
+![Demo](./Demo_compressed.gif)
+
+## RGB Lamp
+
+Some improvements to create something similar to [**Twisted WiFi-controlled
+Desk Lamp**](https://www.thingiverse.com/thing:4129249):
+
+- Drilled base to have access to reset button
+
+![Base](./20210617-105718.jpg)
+
+- Using ESP-01 and ESP-01 RGB Board instead of Weemos D1 mini
+
+![Base 2](./20210621-221439.jpg)
+
+Finished lamp with MQTT Dashboard demo:
+
+![RGB Lamp and MQTT Dashboard](./dashboard_demo.gif)
 
 ## References and links
 
